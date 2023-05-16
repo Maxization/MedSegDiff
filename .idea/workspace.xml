@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="92e07fb0-5089-4530-ad5a-2d5bcec48e26" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/segmentation_sample.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/segmentation_sample.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,6 +49,8 @@
       <workItem from="1683830337097" duration="573000" />
       <workItem from="1683831185402" duration="5616000" />
       <workItem from="1684095187883" duration="2645000" />
+      <workItem from="1684259346086" duration="929000" />
+      <workItem from="1684278985652" duration="430000" />
     </task>
     <servers />
   </component>
