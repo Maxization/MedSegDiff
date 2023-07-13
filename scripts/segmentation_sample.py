@@ -44,7 +44,6 @@ def visualize(img):
     normalized_img = (img - _min)/ (_max - _min)
     return normalized_img
 
-
 def main():
     args = create_argparser().parse_args()
     dist_util.setup_dist(args)
@@ -74,7 +73,6 @@ def main():
         transform_train = transforms.Compose(tran_list)
 
         ds = MRIDataset(args, args.data_dir, transform_train)
-        args.in_ch = 2
     elif args.data_name == 'BRATS':
         tran_list = [transforms.Resize((args.image_size,args.image_size)),]
         transform_test = transforms.Compose(tran_list)
