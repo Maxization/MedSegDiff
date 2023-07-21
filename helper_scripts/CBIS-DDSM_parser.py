@@ -1,29 +1,19 @@
 from PIL import Image
 import pandas as pd
+import pydicom
+import os
 import numpy as np
 from pathlib import Path
+import matplotlib.pyplot as plt
 
-path = "D:/Segmentacja/Experiments/CBIS-DDSM/"
-csv_path = path + "csv/dicom_info.csv"
-dicom_data = pd.read_csv(csv_path)
-
-cropped_images=dicom_data[dicom_data.SeriesDescription == 'cropped images']
-cropped_images["image_path"] = cropped_images["image_path"].apply(lambda x: x.replace('CBIS-DDSM/', ""))
-cropped_images = cropped_images.reset_index()
-
-full_mammogram_images=dicom_data[dicom_data.SeriesDescription == 'full mammogram images']
-full_mammogram_images["image_path"] = full_mammogram_images["image_path"].apply(lambda x: x.replace('CBIS-DDSM/', ""))
-full_mammogram_images = full_mammogram_images.reset_index()
-
-ROI_mask_images=dicom_data[dicom_data.SeriesDescription == 'ROI mask images']
-ROI_mask_images["image_path"] = ROI_mask_images["image_path"].apply(lambda x: x.replace('CBIS-DDSM/', ""))
-ROI_mask_images = ROI_mask_images.reset_index()
-
-calc_data = pd.read_csv(path + "csv/calc_case_description_train_set.csv")
-mass_data = pd.read_csv(path + "csv/mass_case_description_train_set.csv")
-
-calc_test_data = pd.read_csv(path + "csv/calc_case_description_test_set.csv")
-mass_test_data = pd.read_csv(path + "csv/mass_case_description_test_set.csv")
+def normalize(arr):
+  arr = arr.astype('float')
+  minval = arr.min()
+  maxval = arr.max()
+  if minval != maxval:
+    arr -= minval
+    arr *= (255.0 / (maxval - minval))
+  return arr
 
 def clear_calc(calc_data):
   calc_cleaning_1 = calc_data.copy()
@@ -33,6 +23,7 @@ def clear_calc(calc_data):
   calc_cleaning_1 = calc_cleaning_1.rename(columns={'left or right breast': 'left_or_right_breast'})
   calc_cleaning_1 = calc_cleaning_1.rename(columns={'breast density': 'breast_density'})
   calc_cleaning_1 = calc_cleaning_1.rename(columns={'abnormality type': 'abnormality_type'})
+  calc_cleaning_1 = calc_cleaning_1.rename(columns={'abnormality_id': 'abnormality_id'})
   calc_cleaning_1 = calc_cleaning_1.rename(columns={'image file path': 'image_file_path'})
   calc_cleaning_1 = calc_cleaning_1.rename(columns={'cropped image file path': 'cropped_image_file_path'})
   calc_cleaning_1 = calc_cleaning_1.rename(columns={'ROI mask file path': 'ROI_mask_file_path'})
@@ -42,10 +33,10 @@ def clear_calc(calc_data):
   calc_cleaning_1['abnormality_type'] = calc_cleaning_1['abnormality_type'].astype('category')
   calc_cleaning_1['image_view'] = calc_cleaning_1['image_view'].astype('category')
   calc_cleaning_1['left_or_right_breast'] = calc_cleaning_1['left_or_right_breast'].astype('category')
-
   calc_cleaning_1['calc_type'].fillna(method='bfill', axis=0, inplace=True)
   calc_cleaning_1['calc_distribution'].fillna(method='bfill', axis=0, inplace=True)
 
+  calc_cleaning_1 = calc_cleaning_1.reset_index(drop=True)
   return calc_cleaning_1
 
 def clear_mass(mass_data):
@@ -55,6 +46,7 @@ def clear_mass(mass_data):
   mass_cleaning_2 = mass_cleaning_2.rename(columns={'mass margins': 'mass_margins'})
   mass_cleaning_2 = mass_cleaning_2.rename(columns={'image view': 'image_view'})
   mass_cleaning_2 = mass_cleaning_2.rename(columns={'abnormality type': 'abnormality_type'})
+  mass_cleaning_2 = mass_cleaning_2.rename(columns={'abnormality_id': 'abnormality_id'})
   mass_cleaning_2 = mass_cleaning_2.rename(columns={'image file path': 'image_file_path'})
   mass_cleaning_2 = mass_cleaning_2.rename(columns={'cropped image file path': 'cropped_image_file_path'})
   mass_cleaning_2 = mass_cleaning_2.rename(columns={'ROI mask file path': 'ROI_mask_file_path'})
@@ -64,82 +56,93 @@ def clear_mass(mass_data):
   mass_cleaning_2['mass_shape'] = mass_cleaning_2['mass_shape'].astype('category')
   mass_cleaning_2['abnormality_type'] = mass_cleaning_2['abnormality_type'].astype('category')
   mass_cleaning_2['pathology'] = mass_cleaning_2['pathology'].astype('category')
-
   mass_cleaning_2['mass_shape'].fillna(method='bfill', axis=0, inplace=True)
   mass_cleaning_2['mass_margins'].fillna(method='bfill', axis=0, inplace=True)
 
+  mass_cleaning_2 = mass_cleaning_2.reset_index(drop=True)
   return mass_cleaning_2
 
-def parse_df(df):
-  image_file_paths = []
-  cropped_image_file_paths = []
-  ROI_mask_file_paths = []
-  for i in range(0, len(df)):
-    str = df.iloc[i]["image_file_path"]
-    str = str[:str.rfind('/')]
-    str = str[str.rfind('/') + 1:]
+def get_uint8_array(dcm):
+  arr = dcm.pixel_array
+  if dcm.BitsAllocated == 16:
+    arr = (arr / 256).astype('uint8')
 
-    if (full_mammogram_images[full_mammogram_images["SeriesInstanceUID"] == str].image_path).empty:
-      image_file_paths.append(np.nan)
-    else:
-      image_file_path = full_mammogram_images[full_mammogram_images["SeriesInstanceUID"] == str].image_path.iloc[0]
-      image_file_paths.append(image_file_path)
+  arr = normalize(arr)
+  return arr.astype('uint8')
 
-    str = df.iloc[i]["cropped_image_file_path"]
-    str = str[:str.rfind('/')]
-    str = str[str.rfind('/') + 1:]
+def get_image_paths(image_folder, mask_folder):
+  image_path = os.path.join(image_folder, "1-1.dcm")
+  mask_path = os.path.join(mask_folder, "1-1.dcm")
+  cropped_path = os.path.join(mask_folder, "1-2.dcm")
 
-    if (cropped_images[cropped_images["SeriesInstanceUID"] == str].image_path).empty:
-      cropped_image_file_paths.append(np.nan)
-    else:
-      cropped_image_file_path = cropped_images[cropped_images["SeriesInstanceUID"] == str].image_path.iloc[0]
-      cropped_image_file_paths.append(cropped_image_file_path)
+  file_stats1 = os.stat(mask_path)
+  file_stats2 = os.stat(cropped_path)
+  if file_stats1.st_size < file_stats2.st_size:
+    tmp = cropped_path
+    cropped_path = mask_path
+    mask_path = tmp
 
-    str = df.iloc[i]["ROI_mask_file_path"]
-    str = str[:str.rfind('/')]
-    str = str[str.rfind('/') + 1:]
+  return image_path, cropped_path, mask_path
 
-    if (ROI_mask_images[ROI_mask_images["SeriesInstanceUID"] == str].image_path).empty:
-      ROI_mask_file_paths.append(np.nan)
-    else:
-      roi_mask_file_path = ROI_mask_images[ROI_mask_images["SeriesInstanceUID"] == str].image_path.iloc[0]
-      ROI_mask_file_paths.append(roi_mask_file_path)
+def process_dataset(df, save_train_path):
+  image_number = 1
+  for index, row in df.iterrows():
+    if image_number % 10 == 0:
+      print(f'Image {image_number}')
 
-  df["image_file_path"] = image_file_paths
-  df["cropped_image_file_path"] = cropped_image_file_paths
-  df["ROI_mask_file_path"] = ROI_mask_file_paths
+    image_path = path + 'CBIS-DDSM/' + row['image_file_path']
+    mask_path = path + 'CBIS-DDSM/' + row['ROI_mask_file_path']
 
-  df = df.dropna(subset=['image_file_path', 'cropped_image_file_path', 'ROI_mask_file_path'])
-  df = df.reset_index()
-  return df
+    image_folder = os.path.dirname(os.path.abspath(image_path))
+    mask_folder = os.path.dirname(os.path.abspath(mask_path))
 
-def display_df(df):
-  for i in range(0, len(df)):
-    test = df.iloc[i]
-    im1 = Image.open(path + test["image_file_path"])
-    im3 = Image.open(path + test["ROI_mask_file_path"])
+    (image_path, _, mask_path) = get_image_paths(image_folder, mask_folder)
 
-    print(im1.size[0] / im1.size[1])
-    print(im1.size)
-    print(im3.size)
+    image_dcm = pydicom.dcmread(image_path)
+    mask_dcm = pydicom.dcmread(mask_path)
 
-    im1.show()
-    im3.show()
+    image_array = get_uint8_array(image_dcm)
+    mask_array = get_uint8_array(mask_dcm)
 
-#calc_cleaning_1 = clear_calc(calc_data)
-#calc_test_cleaning = clear_calc(calc_test_data)
+    if image_array.shape[0] != mask_array.shape[0] or image_array.shape[1] != mask_array.shape[1]:
+      print("Invalid shapes")
+      #exit(-1)
 
-mass_cleaning_2 = clear_mass(mass_data)
-mass_test_cleaning = clear_mass(mass_test_data)
+    im1 = Image.fromarray(image_array)
+    im1 = im1.resize((307, 512))
 
-#calc_cleaning_1 = parse_df(calc_cleaning_1)
-#calc_test_cleaning = parse_df(calc_test_cleaning)
+    im2 = Image.fromarray(mask_array)
+    im2 = im2.resize((307, 512))
 
-mass_cleaning_2 = parse_df(mass_cleaning_2)
-mass_test_cleaning = parse_df(mass_test_cleaning)
+    image_save_path = save_train_path + str(image_number) + ".tif"
+    mask_save_path = save_train_path + str(image_number) + "_mask.tif"
+    im1.save(image_save_path, quality=100)
+    im2.save(mask_save_path, quality=100)
 
-print(len(mass_cleaning_2))
-print(len(mass_test_cleaning))
+    image_number = image_number + 1
 
-mass_cleaning_2.to_csv('D:/Segmentacja/Experiments/CBIS-DDSM/parsed_csv/mass_case_description_train_set.csv')
-mass_test_cleaning.to_csv('D:/Segmentacja/Experiments/CBIS-DDSM/parsed_csv/mass_case_description_test_set.csv')
+path = "E:/"
+
+calc_train_data = pd.read_csv(path + "calc_case_description_train_set.csv")
+mass_train_data = pd.read_csv(path + "mass_case_description_train_set.csv")
+
+calc_test_data = pd.read_csv(path + "calc_case_description_test_set.csv")
+mass_test_data = pd.read_csv(path + "mass_case_description_test_set.csv")
+
+# mass_train_data = clear_mass(mass_train_data)
+# mass_train_data = mass_train_data.loc[mass_train_data['image_view'] == 'CC']
+# mass_train_data1 = mass_train_data.loc[mass_train_data['assessment'] > 3]
+# mass_train_data2 = mass_train_data.loc[mass_train_data['assessment'] <= 3]
+
+calc_test_data = clear_calc(calc_test_data)
+calc_test_data = calc_test_data.loc[calc_test_data['image_view'] == 'CC']
+
+calc_train_data = clear_calc(calc_train_data)
+calc_train_data = calc_train_data.loc[calc_train_data['image_view'] == 'CC']
+#calc_train_data1 = calc_train_data.loc[calc_train_data['assessment'] > 3]
+#calc_train_data2 = calc_train_data.loc[calc_train_data['assessment'] <= 3]
+
+print(len(calc_test_data))
+print(len(calc_train_data))
+
+process_dataset(calc_train_data, "E:/calc_train/")
