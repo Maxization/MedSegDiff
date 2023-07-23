@@ -65,7 +65,7 @@ def main():
         ds = MRIDataset(args, args.data_dir, transform_train)
     elif args.data_name == 'CBISDDSM':
         args.in_ch = 2
-        tran_list = [transforms.Resize((args.image_size, args.image_size)), transforms.ToTensor(), ]
+        tran_list = [transforms.Resize((320, 512)), transforms.ToTensor(), ]
 
         transform_train = transforms.Compose(tran_list)
         ds = CBISDDSMDataset(args, args.data_dir, transform_train)

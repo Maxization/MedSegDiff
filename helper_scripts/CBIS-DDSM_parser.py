@@ -109,10 +109,10 @@ def process_dataset(df, save_train_path):
       #exit(-1)
 
     im1 = Image.fromarray(image_array)
-    im1 = im1.resize((307, 512))
+    im1 = im1.resize((320, 512))
 
     im2 = Image.fromarray(mask_array)
-    im2 = im2.resize((307, 512))
+    im2 = im2.resize((320, 512))
 
     image_save_path = save_train_path + str(image_number) + ".tif"
     mask_save_path = save_train_path + str(image_number) + "_mask.tif"
@@ -145,4 +145,4 @@ calc_train_data = calc_train_data.loc[calc_train_data['image_view'] == 'CC']
 print(len(calc_test_data))
 print(len(calc_train_data))
 
-process_dataset(calc_train_data, "E:/calc_train/")
+process_dataset(calc_test_data, "E:/calc_test/")

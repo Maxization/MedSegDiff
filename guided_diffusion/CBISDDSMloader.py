@@ -35,7 +35,7 @@ class CBISDDSMDataset(Dataset):
         self.mode = mode
 
         self.transform = transform
-        tran_list = [transforms.Resize((307, 512)), transforms.ToTensor(), ]
+        tran_list = [transforms.Resize((320, 512)), transforms.ToTensor(), ]
         self.mask_transform = transforms.Compose(tran_list)
 
     def __len__(self):
