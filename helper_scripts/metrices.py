@@ -152,7 +152,8 @@ for patient in patients:
       cv2.drawContours(mask, [biggest], -1, 255, -1)
 
     # save
-    cv2.imwrite(convertedFolder + pred, mask)
+    converted_name = pred[:-15] + '_conv.jpg'
+    cv2.imwrite(convertedFolder + converted_name, mask)
 
     # Merged images
     mask = '/' + pred[:-15] + '_mask.tif'
