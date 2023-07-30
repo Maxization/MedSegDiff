@@ -158,7 +158,7 @@ for patient in patients:
     # Merged images
     mask = '/' + pred[:-15] + '_mask.tif'
     mask_path = target_folder + mask
-    conv_path = convertedFolder + pred
+    conv_path = convertedFolder + converted_name
     mergeMasks(mask_path, conv_path).save(mergedFolder + pred[:-15] + '_merged' + '.png')
 
     iou_value, precision, recall, accuracy_value, dice_value, mse = calculate_metrics(mask_path, conv_path)
