@@ -1,6 +1,7 @@
 import os
+import sys
 
-path = "D:/Segmentacja/Experiments/Grayscale/split1/"
+path = sys.argv[1]
 files = os.listdir(path)
 
 for file in files:

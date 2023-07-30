@@ -100,10 +100,8 @@ def display_histogram(img):
   plt.ylim([0, 100])
   plt.show()
 
-#pred = Image.open(sys.argv[1])
-#target = Image.open(sys.argv[2])
-result_path = f'D:/Segmentacja/Experiments/Grayscale/split1/'
-test_folder = f'D:/Segmentacja/Experiments/data/data/split1/test/'
+result_path = sys.argv[1]
+test_folder = sys.argv[2]
 
 patients = os.listdir(result_path)
 iou_avg = 0

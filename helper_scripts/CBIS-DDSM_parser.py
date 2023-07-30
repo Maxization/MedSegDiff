@@ -75,6 +75,10 @@ def get_image_paths(image_folder, mask_folder):
   mask_path = os.path.join(mask_folder, "1-1.dcm")
   cropped_path = os.path.join(mask_folder, "1-2.dcm")
 
+  if not os.path.isfile(image_path) or not os.path.isfile(mask_path) or not os.path.isfile(cropped_path):
+    print('Missing image')
+    return -1, -1, -1
+
   file_stats1 = os.stat(mask_path)
   file_stats2 = os.stat(cropped_path)
   if file_stats1.st_size < file_stats2.st_size:
@@ -97,6 +101,9 @@ def process_dataset(df, save_train_path):
     mask_folder = os.path.dirname(os.path.abspath(mask_path))
 
     (image_path, _, mask_path) = get_image_paths(image_folder, mask_folder)
+
+    if image_path == -1:
+      continue
 
     image_dcm = pydicom.dcmread(image_path)
     mask_dcm = pydicom.dcmread(mask_path)
@@ -129,20 +136,28 @@ mass_train_data = pd.read_csv(path + "mass_case_description_train_set.csv")
 calc_test_data = pd.read_csv(path + "calc_case_description_test_set.csv")
 mass_test_data = pd.read_csv(path + "mass_case_description_test_set.csv")
 
-# mass_train_data = clear_mass(mass_train_data)
+mass_train_data = clear_mass(mass_train_data)
+mass_train_data = mass_train_data.loc[mass_train_data['image_view'] == 'MLO']
+
+mass_test_data = clear_mass(mass_test_data)
+mass_test_data = mass_test_data.loc[mass_test_data['image_view'] == 'MLO']
 # mass_train_data = mass_train_data.loc[mass_train_data['image_view'] == 'CC']
 # mass_train_data1 = mass_train_data.loc[mass_train_data['assessment'] > 3]
 # mass_train_data2 = mass_train_data.loc[mass_train_data['assessment'] <= 3]
 
-calc_test_data = clear_calc(calc_test_data)
-calc_test_data = calc_test_data.loc[calc_test_data['image_view'] == 'CC']
+#calc_test_data = clear_calc(calc_test_data)
+#calc_test_data = calc_test_data.loc[calc_test_data['image_view'] == 'MLO']
 
-calc_train_data = clear_calc(calc_train_data)
-calc_train_data = calc_train_data.loc[calc_train_data['image_view'] == 'CC']
+#calc_train_data = clear_calc(calc_train_data)
+#calc_train_data = calc_train_data.loc[calc_train_data['image_view'] == 'MLO']
 #calc_train_data1 = calc_train_data.loc[calc_train_data['assessment'] > 3]
 #calc_train_data2 = calc_train_data.loc[calc_train_data['assessment'] <= 3]
 
-print(len(calc_test_data))
-print(len(calc_train_data))
+#print(len(calc_test_data))
+#print(len(calc_train_data))
 
-process_dataset(calc_test_data, "E:/calc_test/")
+print(len(mass_test_data))
+print(len(mass_train_data))
+
+process_dataset(mass_test_data, "E:/mass_mlo_test/")
+process_dataset(mass_train_data, "E:/mass_mlo_train/")
