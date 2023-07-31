@@ -19,6 +19,7 @@ from guided_diffusion import dist_util, logger
 from guided_diffusion.bratsloader import BRATSDataset, BRATSDataset3D
 from guided_diffusion.isicloader import ISICDataset
 from guided_diffusion.MRIloader import MRIDataset
+from guided_diffusion.CBISDDSMloader import CBISDDSMDataset
 import torchvision.utils as vutils
 from guided_diffusion.utils import staple
 from guided_diffusion.script_util import (
@@ -79,6 +80,13 @@ def main():
 
         ds = BRATSDataset3D(args.data_dir,transform_test)
         args.in_ch = 5
+    elif args.data_name == 'CBISDDSM':
+        args.in_ch = 2
+        tran_list = [transforms.Resize((320, 512)), transforms.ToTensor(), ]
+
+        transform_train = transforms.Compose(tran_list)
+        ds = CBISDDSMDataset(args, args.data_dir, transform_train)
+
     datal = th.utils.data.DataLoader(
         ds,
         batch_size=args.batch_size,
