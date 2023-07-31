@@ -41,6 +41,10 @@ class CBISDDSMDataset(Dataset):
     def __len__(self):
         return len(self.name_list)
 
+    def path_leaf(self, path):
+        head, tail = ntpath.split(path)
+        return tail or ntpath.basename(head)
+
     def __getitem__(self, index):
         """Get the images"""
         name = self.name_list[index]

@@ -10,6 +10,7 @@ import sys
 import random
 
 sys.path.append(".")
+sys.path.append("..")
 import numpy as np
 import time
 import torch as th
@@ -30,7 +31,6 @@ from guided_diffusion.script_util import (
     args_to_dict,
 )
 import torchvision.transforms as transforms
-from torchsummary import summary
 import scipy.ndimage as ndi
 
 seed=10
@@ -129,6 +129,9 @@ def main():
             slice_ID=path[0].split("_")[-3] + "_" + path[0].split("slice")[-1].split('.nii')[0]
         elif args.data_name == 'MRI':
             slice_ID = ds.path_leaf(path[0])[:-4]
+        elif args.data_name == 'CBISDDSM':
+            slice_ID = ds.path_leaf(path[0])[:-4]
+
         logger.log(slice_ID)
 
         logger.log("sampling...")
