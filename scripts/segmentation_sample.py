@@ -82,7 +82,7 @@ def main():
         args.in_ch = 5
     elif args.data_name == 'CBISDDSM':
         args.in_ch = 2
-        tran_list = [transforms.Resize((320, 512)), transforms.ToTensor(), ]
+        tran_list = [transforms.Resize((512, 320)), transforms.ToTensor(), ]
 
         transform_train = transforms.Compose(tran_list)
         ds = CBISDDSMDataset(args, args.data_dir, transform_train)
