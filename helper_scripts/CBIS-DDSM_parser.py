@@ -136,28 +136,32 @@ mass_train_data = pd.read_csv(path + "mass_case_description_train_set.csv")
 calc_test_data = pd.read_csv(path + "calc_case_description_test_set.csv")
 mass_test_data = pd.read_csv(path + "mass_case_description_test_set.csv")
 
+# Mass
 mass_train_data = clear_mass(mass_train_data)
 mass_train_data = mass_train_data.loc[mass_train_data['image_view'] == 'MLO']
+mass_train_data = mass_train_data.loc[mass_train_data['assessment'] > 3]
 
 mass_test_data = clear_mass(mass_test_data)
 mass_test_data = mass_test_data.loc[mass_test_data['image_view'] == 'MLO']
-# mass_train_data = mass_train_data.loc[mass_train_data['image_view'] == 'CC']
-# mass_train_data1 = mass_train_data.loc[mass_train_data['assessment'] > 3]
-# mass_train_data2 = mass_train_data.loc[mass_train_data['assessment'] <= 3]
+mass_test_data = mass_test_data.loc[mass_test_data['assessment'] > 3]
 
+# Calc
 #calc_test_data = clear_calc(calc_test_data)
 #calc_test_data = calc_test_data.loc[calc_test_data['image_view'] == 'MLO']
+#calc_test_data = calc_test_data.loc[calc_test_data['assessment'] > 3]
 
 #calc_train_data = clear_calc(calc_train_data)
 #calc_train_data = calc_train_data.loc[calc_train_data['image_view'] == 'MLO']
-#calc_train_data1 = calc_train_data.loc[calc_train_data['assessment'] > 3]
-#calc_train_data2 = calc_train_data.loc[calc_train_data['assessment'] <= 3]
-
-#print(len(calc_test_data))
-#print(len(calc_train_data))
+#calc_train_data = calc_train_data.loc[calc_train_data['assessment'] > 3]
 
 print(len(mass_test_data))
 print(len(mass_train_data))
 
-process_dataset(mass_test_data, "E:/mass_mlo_test/")
-process_dataset(mass_train_data, "E:/mass_mlo_train/")
+#print(len(mass_test_data))
+#print(len(mass_train_data))
+
+process_dataset(mass_test_data, "E:/mass_mlo_mali_test/")
+process_dataset(mass_train_data, "E:/mass_mlo_mali_train/")
+
+#process_dataset(mass_test_data, "E:/mass_mlo_test/")
+#process_dataset(mass_train_data, "E:/mass_mlo_train/")
