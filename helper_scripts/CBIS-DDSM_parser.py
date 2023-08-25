@@ -1,10 +1,11 @@
-from PIL import Image
+from PIL import Image, ImageOps
 import pandas as pd
 import pydicom
 import os
 import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
+import cv2
 
 def normalize(arr):
   arr = arr.astype('float')
@@ -14,6 +15,62 @@ def normalize(arr):
     arr -= minval
     arr *= (255.0 / (maxval - minval))
   return arr
+
+def crop(img, mask):
+  """
+  Crop breast ROI from image.
+  @img : numpy array image
+  @mask : numpy array mask of the lesions
+  return: numpy array of the ROI extracted for the image,
+          numpy array of the ROI extracted for the breast mask,
+          numpy array of the ROI extracted for the masses mask
+  """
+  # Otsu's thresholding after Gaussian filtering
+  blur = cv2.GaussianBlur(img, (5, 5), 0)
+  _, breast_mask = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+  img1 = Image.fromarray(breast_mask)
+  img1.show()
+  cnts, _ = cv2.findContours(breast_mask.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+  cnt = max(cnts, key=cv2.contourArea)
+  x, y, w, h = cv2.boundingRect(cnt)
+
+  return img[y:y + h, x:x + w], mask[y:y + h, x:x + w]
+
+def segment_breast(img, mask, low_int_threshold=.05, crop=True):
+  '''Perform breast segmentation
+  Args:
+      low_int_threshold([float or int]): Low intensity threshold to
+              filter out background. It can be a fraction of the max
+              intensity value or an integer intensity value.
+      crop ([bool]): Whether or not to crop the image.
+  Returns:
+      An image of the segmented breast.
+  NOTES: the low_int_threshold is applied to an image of dtype 'uint8',
+      which has a max value of 255.
+  '''
+  # Create img for thresholding and contours.
+  img_8u = (img.astype('float32') / img.max() * 255).astype('uint8')
+  if low_int_threshold < 1.:
+    low_th = int(img_8u.max() * low_int_threshold)
+  else:
+    low_th = int(low_int_threshold)
+  _, img_bin = cv2.threshold(
+    img_8u, low_th, maxval=255, type=cv2.THRESH_BINARY)
+
+  contours, _ = cv2.findContours(
+    img_bin.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+  cont_areas = [cv2.contourArea(cont) for cont in contours]
+  idx = np.argmax(cont_areas)  # find the largest contour, i.e. breast.
+  breast_mask = cv2.drawContours(
+    np.zeros_like(img_bin), contours, idx, 255, -1)  # fill the contour.
+  # segment the breast.
+  img_breast_only = cv2.bitwise_and(img, img, mask=breast_mask)
+  x, y, w, h = cv2.boundingRect(contours[idx])
+  if crop:
+    img_breast_only = img_breast_only[y:y + h, x:x + w]
+    mask = mask[y:y + h, x:x + w]
+  return img_breast_only, mask
 
 def clear_calc(calc_data):
   calc_cleaning_1 = calc_data.copy()
@@ -115,53 +172,55 @@ def process_dataset(df, save_train_path):
       print("Invalid shapes")
       #exit(-1)
 
-    im1 = Image.fromarray(image_array)
-    im1 = im1.resize((320, 512))
+    margin = 60
+    image_array = image_array[margin:image_array.shape[0] - margin, margin:image_array.shape[1] - margin]
+    mask_array = mask_array[margin:image_array.shape[0] - margin, margin:image_array.shape[1] - margin]
+
+    image_array, mask_array = segment_breast(image_array, mask_array)
 
     im2 = Image.fromarray(mask_array)
-    im2 = im2.resize((320, 512))
 
+
+    im1 = Image.fromarray(image_array)
+    #im1.show()
+    #im1 = ImageOps.equalize(im1, mask=None)
+    #im1.show()
+    im1 = im1.resize((256, 256))
+
+    #im2.show()
+    im2 = im2.resize((256, 256))
     image_save_path = save_train_path + str(image_number) + ".tif"
     mask_save_path = save_train_path + str(image_number) + "_mask.tif"
     im1.save(image_save_path, quality=100)
-    im2.save(mask_save_path, quality=100)
+    #im2.save(mask_save_path, quality=100)
 
     image_number = image_number + 1
 
 path = "E:/"
 
-calc_train_data = pd.read_csv(path + "calc_case_description_train_set.csv")
 mass_train_data = pd.read_csv(path + "mass_case_description_train_set.csv")
-
-calc_test_data = pd.read_csv(path + "calc_case_description_test_set.csv")
 mass_test_data = pd.read_csv(path + "mass_case_description_test_set.csv")
 
-# Mass
+
+mass_shape = ['OVAL', 'OVAL-LYMPH_NODE', 'ROUND', 'ROUND-IRREGULAR-ARCHITECTURAL_DISTORTION', 'ROUND-OVAL']
+mass_margins = ['SPICULATED', 'ILL_DEFINED-SPICULATED', 'MICROLOBULATED-SPICULATED', 'OBSCURED-SPICULATED', 'OBSCURED-ILL_DEFINED-SPICULATED']
+image_view_MLO = 'MLO'
+image_view_CC = 'CC'
+
+
+# Mass breast_density
 mass_train_data = clear_mass(mass_train_data)
-mass_train_data = mass_train_data.loc[mass_train_data['image_view'] == 'MLO']
 mass_train_data = mass_train_data.loc[mass_train_data['assessment'] > 3]
+mass_train_data = mass_train_data.loc[mass_train_data['image_view'] == image_view_CC]
+mass_train_data = mass_train_data[mass_train_data['mass_shape'].isin(mass_shape)]
 
 mass_test_data = clear_mass(mass_test_data)
-mass_test_data = mass_test_data.loc[mass_test_data['image_view'] == 'MLO']
 mass_test_data = mass_test_data.loc[mass_test_data['assessment'] > 3]
-
-# Calc
-#calc_test_data = clear_calc(calc_test_data)
-#calc_test_data = calc_test_data.loc[calc_test_data['image_view'] == 'MLO']
-#calc_test_data = calc_test_data.loc[calc_test_data['assessment'] > 3]
-
-#calc_train_data = clear_calc(calc_train_data)
-#calc_train_data = calc_train_data.loc[calc_train_data['image_view'] == 'MLO']
-#calc_train_data = calc_train_data.loc[calc_train_data['assessment'] > 3]
+mass_test_data = mass_test_data.loc[mass_test_data['image_view'] == image_view_CC]
+mass_test_data = mass_test_data[mass_test_data['mass_shape'].isin(mass_shape)]
 
 print(len(mass_test_data))
 print(len(mass_train_data))
 
-#print(len(mass_test_data))
-#print(len(mass_train_data))
-
-process_dataset(mass_test_data, "E:/mass_mlo_mali_test/")
-process_dataset(mass_train_data, "E:/mass_mlo_mali_train/")
-
-#process_dataset(mass_test_data, "E:/mass_mlo_test/")
-#process_dataset(mass_train_data, "E:/mass_mlo_train/")
+process_dataset(mass_test_data, "E:/experiment2/oval_cc/test/")
+process_dataset(mass_train_data, "E:/experiment2/oval_cc/train/")
