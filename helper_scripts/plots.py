@@ -10,7 +10,7 @@ def get_number(str):
   return float(str)
 
 path = 'E:/metrices'
-cat = 'Filter'
+cat = 'Greyscale'
 
 onlyfiles = [join(path, f) for f in listdir(path) if isfile(join(path, f)) and cat.lower() in f]
 print(onlyfiles)
@@ -64,6 +64,18 @@ for file in onlyfiles:
     mse_arr.append(split_mse)
 
 def draw_plot(array, name, category = ''):
+  SMALL_SIZE = 16
+  MEDIUM_SIZE = 18
+  BIGGER_SIZE = 20
+
+  plt.rc('font', size=SMALL_SIZE)  # controls default text sizes
+  plt.rc('axes', titlesize=SMALL_SIZE)  # fontsize of the axes title
+  plt.rc('axes', labelsize=MEDIUM_SIZE)  # fontsize of the x and y labels
+  plt.rc('xtick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+  plt.rc('ytick', labelsize=SMALL_SIZE)  # fontsize of the tick labels
+  plt.rc('legend', fontsize=SMALL_SIZE)  # legend fontsize
+  plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
   fig, ax = plt.subplots()
   ax.boxplot(array, labels=['Split1', 'Split2', 'Split3', 'Split4', 'Split5'])
 
@@ -72,15 +84,15 @@ def draw_plot(array, name, category = ''):
   plt.savefig("./plots/" + title.replace(' ', '_') + ".png")
   #plt.show()
 
-#draw_plot(iou_arr, 'IOU', cat)
-#draw_plot(precision_arr, 'Precision', cat)
-#draw_plot(recall_arr, 'Recall', cat)
-#draw_plot(accuracy_arr, 'Accuracy', cat)
-#draw_plot(dice_coef_arr, 'Dice Coef', cat)
-#draw_plot(mse_arr, 'MSE', cat)
+draw_plot(iou_arr, 'IOU', cat)
+draw_plot(precision_arr, 'Precision', cat)
+draw_plot(recall_arr, 'Recall', cat)
+draw_plot(accuracy_arr, 'Accuracy', cat)
+draw_plot(dice_coef_arr, 'Dice Coef', cat)
+draw_plot(mse_arr, 'MSE', cat)
 
-mean_arr = []
-for arr in dice_coef_arr:
-  mean_arr.append(np.median(arr))
-
-print(np.max(mean_arr))
+# mean_arr = []
+# for arr in dice_coef_arr:
+#   mean_arr.append(np.median(arr))
+#
+# print(np.max(mean_arr))

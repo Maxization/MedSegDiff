@@ -185,14 +185,14 @@ def process_dataset(df, save_train_path):
     #im1.show()
     #im1 = ImageOps.equalize(im1, mask=None)
     #im1.show()
-    im1 = im1.resize((256, 256))
+    #im1 = im1.resize((256, 256))
 
     #im2.show()
-    im2 = im2.resize((256, 256))
+    #im2 = im2.resize((256, 256))
     image_save_path = save_train_path + str(image_number) + ".tif"
     mask_save_path = save_train_path + str(image_number) + "_mask.tif"
     im1.save(image_save_path, quality=100)
-    #im2.save(mask_save_path, quality=100)
+    im2.save(mask_save_path, quality=100)
 
     image_number = image_number + 1
 
@@ -209,18 +209,37 @@ image_view_CC = 'CC'
 
 
 # Mass breast_density
-mass_train_data = clear_mass(mass_train_data)
-mass_train_data = mass_train_data.loc[mass_train_data['assessment'] > 3]
-mass_train_data = mass_train_data.loc[mass_train_data['image_view'] == image_view_CC]
-mass_train_data = mass_train_data[mass_train_data['mass_shape'].isin(mass_shape)]
+#mass_train_data = pd.read_csv(path + "mass_case_description_test_set.csv")
+mass_train_data1 = clear_mass(mass_train_data)
+mass_train_data1 = mass_train_data1.loc[mass_train_data1['assessment'] > 3]
+mass_train_data1 = mass_train_data1.loc[(mass_train_data1['breast_density'] == 1) | (mass_train_data1['breast_density'] == 2)]
+#mass_train_data1 = mass_train_data1.loc[mass_train_data1['image_view'] == image_view_MLO]
+#mass_train_data1 = mass_train_data1[mass_train_data1['mass_shape'].isin(mass_shape)]
 
-mass_test_data = clear_mass(mass_test_data)
-mass_test_data = mass_test_data.loc[mass_test_data['assessment'] > 3]
-mass_test_data = mass_test_data.loc[mass_test_data['image_view'] == image_view_CC]
-mass_test_data = mass_test_data[mass_test_data['mass_shape'].isin(mass_shape)]
+#mass_train_data2 = clear_mass(mass_train_data)
+#mass_train_data2 = mass_train_data2.loc[mass_train_data2['assessment'] <= 3]
+#mass_train_data2 = mass_train_data2.loc[(mass_train_data2['breast_density'] == 1) | (mass_train_data2['breast_density'] == 2)]
+#mass_train_data2 = mass_train_data2.loc[mass_train_data2['image_view'] == image_view_MLO]
+#mass_train_data2 = mass_train_data2[mass_train_data2['mass_shape'].isin(mass_shape)]
 
-print(len(mass_test_data))
-print(len(mass_train_data))
+#mass_test_data1 = clear_mass(mass_test_data)
+#mass_test_data1 = mass_test_data1.loc[mass_test_data1['assessment'] > 3]
+#mass_test_data1 = mass_test_data1.loc[(mass_test_data1['breast_density'] == 1) | (mass_test_data1['breast_density'] == 2)]
 
-process_dataset(mass_test_data, "E:/experiment2/oval_cc/test/")
-process_dataset(mass_train_data, "E:/experiment2/oval_cc/train/")
+
+#mass_test_data2 = clear_mass(mass_test_data)
+#mass_test_data2 = mass_test_data2.loc[mass_test_data2['assessment'] <= 3]
+#mass_test_data2 = mass_test_data2.loc[(mass_test_data2['breast_density'] == 1) | (mass_test_data2['breast_density'] == 2)]
+#mass_test_data2 = pd.read_csv(path + "mass_case_description_test_set.csv")
+#mass_test_data2 = clear_mass(mass_test_data2)
+#mass_test_data2 = mass_test_data2.loc[mass_test_data2['assessment'] > 3]
+#mass_test_data2 = mass_test_data2.loc[(mass_test_data2['breast_density'] == 3) | (mass_test_data2['breast_density'] == 4)]
+#mass_test_data = mass_test_data.loc[mass_test_data['image_view'] == image_view_CC]
+#mass_test_data = mass_test_data[mass_test_data['mass_shape'].isin(mass_shape)]
+
+print(len(mass_train_data1))
+#print(len(mass_train_data2))
+
+process_dataset(mass_train_data1, "E:/cbisddsm_dataset_examples/")
+#process_dataset(mass_train_data2, "E:/experiment3/ddsm_mlo/heal/")
+#process_dataset(mass_test_data2, "E:/experiment3/cbisddsm_dataset_examples/test34/")

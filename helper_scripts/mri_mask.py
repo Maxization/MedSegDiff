@@ -35,6 +35,10 @@ def segment_breast(img, low_int_threshold=.05, crop=True):
 
 path = 'E:\\mri\\train\\TCGA_CS_4942_19970222\\TCGA_CS_4942_19970222_9.tif'
 
+test = Image.open(path).convert('RGB')
+test2 = np.array(test)
+test3 = np.transpose(test2, [2, 0, 1])
+test4 = np.transpose(test3, [1, 2, 0])
 img = cv2.imread(path)
 img = cv2.cvtColor(np.array(img), cv2.COLOR_BGR2GRAY)
 mask = segment_breast(np.array(img))
